@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# Personal Finance Assistant (Frontend)
 
-## Project info
+React + Vite frontend for the Personal Finance Assistant app (dashboard, transactions, budgets, charts, and AI assistant UI).
 
-**URL**: https://lovable.dev/projects/6c338d64-eec8-4462-953d-dc6e14c2c1bd
+## Live URL
 
-## How can I edit this code?
+https://personal-finance-assistant-peach.vercel.app/
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn/ui
+- TanStack Query
+- Recharts
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6c338d64-eec8-4462-953d-dc6e14c2c1bd) and start prompting.
+## Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 18+ (recommended: Node 20 LTS)
+- npm
 
-**Use your preferred IDE**
+## Environment Variables
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Create a `frontend/.env` file:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+VITE_API_BASE_URL=http://localhost:5000
+```
 
-Follow these steps:
+For production, set it to your deployed backend URL, for example:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+VITE_API_BASE_URL=https://personal-finance-assistant-backend.vercel.app
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Notes:
+- `VITE_API_BASE_URL` should NOT end with a trailing `/`.
+- If you change `VITE_API_BASE_URL`, you must redeploy the frontend for the change to take effect.
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Run Locally
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Vite will print the local URL (usually `http://localhost:5173`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Build
 
-**Use GitHub Codespaces**
+```bash
+cd frontend
+npm run build
+npm run preview
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deploy (Vercel)
 
-## What technologies are used for this project?
+Deploy the frontend as a separate Vercel project.
 
-This project is built with:
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Environment Variables:
+  - `VITE_API_BASE_URL` (your backend URL)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Backend CORS
 
-## How can I deploy this project?
+Make sure the backend allows this frontend origin.
 
-Simply open [Lovable](https://lovable.dev/projects/6c338d64-eec8-4462-953d-dc6e14c2c1bd) and click on Share -> Publish.
+On the backend Vercel project, set:
 
-## Can I connect a custom domain to my Lovable project?
+```bash
+FRONTEND_URL=https://personal-finance-assistant-peach.vercel.app
+```
 
-Yes, you can!
+## Troubleshooting
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- `ERR_CONNECTION_REFUSED` (points to `localhost:5000`):
+  - Your frontend is still using the local default. Set `VITE_API_BASE_URL` in Vercel (or `frontend/.env` locally) and redeploy/restart.
+- `CORS policy blocked this request`:
+  - Update backend `FRONTEND_URL` to include your deployed frontend URL and redeploy backend.
