@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff,Mail, Lock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { API_BASE_URL } from "@/config/api";
+import { storeUser } from "@/utils/authUser";
 
 interface LoginForm {
   email: string;
@@ -62,7 +63,8 @@ const [showPassword, setShowPassword] = useState(false);
         throw new Error(data.error || data.message || "Login failed");
       }
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.token || data?.data?.token);
+      storeUser(data?.data?.user || data?.user);
 
       navigate("/dashboard");
     } catch (err: unknown) {

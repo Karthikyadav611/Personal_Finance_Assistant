@@ -37,8 +37,10 @@ export const PortfolioSummary = () => {
 
   const totalBalance = totalIncome - totalExpenses;
   const monthlyChange = monthlyIncome - monthlyExpenses;
-  const totalSavings = Math.max(totalBalance, 0);
-  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
+  // "Savings" should reflect what you saved in the current month (income - expense),
+  // not the all-time net balance which is already shown as "Current Balance".
+  const monthlySavings = Math.max(monthlyChange, 0);
+  const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0;
   const monthlyChangePercent = monthlyIncome > 0 ? (monthlyChange / monthlyIncome) * 100 : 0;
   const isPositive = monthlyChange >= 0;
 
@@ -95,9 +97,9 @@ export const PortfolioSummary = () => {
                   <Badge variant="secondary" className="bg-slate-700/50 text-white mr-2 text-xs">
                     SAVE
                   </Badge>
-                  <span className="text-slate-300 text-sm">Savings</span>
+                  <span className="text-slate-300 text-sm">Savings (This Month)</span>
                 </div>
-                <span className="text-white text-sm font-medium">{formatCurrency(totalSavings)}</span>
+                <span className="text-white text-sm font-medium">{formatCurrency(monthlySavings)}</span>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-slate-600/50">

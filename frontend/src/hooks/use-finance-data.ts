@@ -29,6 +29,13 @@ export const useFinanceData = () => {
 
   const token = localStorage.getItem("token");
 
+  const extractArray = <T,>(payload: any, nestedKey?: string): T[] => {
+    if (Array.isArray(payload)) return payload as T[];
+    if (Array.isArray(payload?.data)) return payload.data as T[];
+    if (nestedKey && Array.isArray(payload?.data?.[nestedKey])) return payload.data[nestedKey] as T[];
+    return [];
+  };
+
   const refresh = useCallback(async () => {
     if (!token) {
       setTransactions([]);
@@ -43,9 +50,11 @@ export const useFinanceData = () => {
 
       const [transactionsResponse, budgetsResponse] = await Promise.all([
         fetch(`${API_BASE}/transactions`, {
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${API_BASE}/budget`, {
+          cache: "no-store",
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -63,8 +72,9 @@ export const useFinanceData = () => {
         throw new Error(budgetsData.message || "Failed to fetch budgets");
       }
 
-      setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
-      setBudgets(Array.isArray(budgetsData) ? budgetsData : []);
+      // Support both legacy array responses and newer { success, data } envelopes.
+      setTransactions(extractArray<FinanceTransaction>(transactionsData, "transactions"));
+      setBudgets(extractArray<FinanceBudget>(budgetsData));
     } catch (err) {
       setTransactions([]);
       setBudgets([]);

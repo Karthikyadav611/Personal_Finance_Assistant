@@ -116,9 +116,17 @@ const getTopMovers = async () => {
 };
 
 const getMarketNews = async (options = {}) => {
+  const rawTicker = String(options.ticker || "").trim();
+  const ticker =
+    rawTicker.toUpperCase() === "BTC"
+      ? "CRYPTO:BTC"
+      : rawTicker.toUpperCase() === "ETH"
+        ? "CRYPTO:ETH"
+        : rawTicker;
+
   const payload = await fetchAlphaVantage({
     function: "NEWS_SENTIMENT",
-    tickers: options.ticker || "",
+    tickers: ticker,
     topics: options.topics || "financial_markets,finance",
     sort: "LATEST",
     limit: options.limit || 3,

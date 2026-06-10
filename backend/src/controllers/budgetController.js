@@ -9,11 +9,20 @@ const {
 } = require("../utils/validators");
 
 const enrichBudgetsWithSpent = async (userId, budgets) => {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const monthEnd = new Date(monthStart);
+  monthEnd.setMonth(monthEnd.getMonth() + 1);
+  monthEnd.setMilliseconds(-1);
+
   const spentByCategory = await Transaction.aggregate([
     {
       $match: {
         userId,
         type: "expense",
+        date: { $gte: monthStart, $lte: monthEnd },
       },
     },
     {
