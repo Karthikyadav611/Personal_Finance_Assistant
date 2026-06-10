@@ -3,6 +3,7 @@ import { Send, Bot, User, Sparkles, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { notifyFinanceDataUpdated } from "@/utils/financeEvents";
 import { API_BASE_URL } from "@/config/api";
+import { getStoredUserName, storeUser } from "@/utils/authUser";
 
 interface Message {
   id: string;
@@ -74,6 +75,7 @@ const SuggestionChip = ({
 );
 
 export const FinanceChatbot = () => {
+  const [userName, setUserName] = useState(() => getStoredUserName());
   const [suggestions, setSuggestions] = useState([
     "What is today's date?",
     "Show my recent transactions",
@@ -86,7 +88,7 @@ export const FinanceChatbot = () => {
       id: "1",
       type: "bot",
       content:
-        "Hello! I can read your live transactions and budgets, log new expenses or income, update budgets, and answer market questions like stock prices, movers, and headlines.",
+        `Hello ${getStoredUserName() || "there"}! Welcome. How can I help you today?`,
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
@@ -97,6 +99,51 @@ export const FinanceChatbot = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (userName || !token) return;
+
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      try {
+        const response = await fetch(`${API_URL}/user/profile`, {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await response.json().catch(() => null);
+        if (!response.ok) return;
+
+        const user = json?.data || json?.user;
+        const name = String(user?.name || "").trim();
+        if (!cancelled && name) {
+          storeUser(user);
+          setUserName(name);
+        }
+      } catch (_error) {
+        // Keep the generic greeting if the profile request is unavailable.
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, userName]);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      const [first, ...rest] = prev;
+      if (!first || first.id !== "1" || first.type !== "bot") return prev;
+
+      const greetingName = userName || "there";
+      const content = `Hello ${greetingName}! Welcome. How can I help you today?`;
+      if (first.content === content) return prev;
+
+      return [{ ...first, content }, ...rest];
+    });
+  }, [userName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -145,9 +192,16 @@ export const FinanceChatbot = () => {
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || `Server error: ${response.status}`);
-      if (data?.data?.action?.performed) notifyFinanceDataUpdated();
-      if (Array.isArray(data?.data?.suggestions) && data.data.suggestions.length > 0) {
-        setSuggestions(data.data.suggestions);
+      const performed = Boolean(data?.data?.action?.performed ?? data?.action?.performed);
+      if (performed) notifyFinanceDataUpdated();
+
+      const nextSuggestions = Array.isArray(data?.data?.suggestions)
+        ? data.data.suggestions
+        : Array.isArray(data?.suggestions)
+          ? data.suggestions
+          : null;
+      if (Array.isArray(nextSuggestions) && nextSuggestions.length > 0) {
+        setSuggestions(nextSuggestions);
       }
 
       setMessages((prev) => [
@@ -335,6 +389,7 @@ export const FinanceChatbot = () => {
           color: #e2e8f0;
           line-height: 1.55;
           margin: 0;
+          white-space: pre-line;
         }
         .fc-bubble-time {
           font-size: 0.65rem;

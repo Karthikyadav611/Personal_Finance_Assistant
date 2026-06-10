@@ -1,7 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, ArrowUpCircle, ArrowDownCircle, Search, TrendingUp, TrendingDown, Wallet, X, Check } from "lucide-react";
-import { notifyFinanceDataUpdated } from "@/utils/financeEvents";
+import {
+  PlusCircle,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Search,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  X,
+  Check,
+  Trash2,
+  Pencil,
+  Loader2,
+} from "lucide-react";
+import { FINANCE_DATA_UPDATED_EVENT, notifyFinanceDataUpdated } from "@/utils/financeEvents";
 import { API_BASE_URL } from "@/config/api";
 
 interface Transaction {
@@ -46,7 +59,24 @@ const StatPill = ({
 );
 
 /* ── Transaction row ── */
-const TransactionRow = ({ tx, index }: { tx: Transaction; index: number }) => {
+const formatTxDate = (value: string) => {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("en-IN");
+};
+
+const TransactionRow = ({
+  tx,
+  index,
+  busy,
+  onEdit,
+  onDelete,
+}: {
+  tx: Transaction;
+  index: number;
+  busy: boolean;
+  onEdit: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
+}) => {
   const isIncome = tx.type === "income";
   return (
     <div
@@ -66,13 +96,35 @@ const TransactionRow = ({ tx, index }: { tx: Transaction; index: number }) => {
         <div className="th-tx-meta">
           <span className="th-tx-category">{tx.category}</span>
           <span className="th-tx-dot">·</span>
-          <span>{tx.date}</span>
+          <span>{formatTxDate(tx.date)}</span>
         </div>
       </div>
 
-      {/* Amount */}
-      <div className={`th-tx-amount ${isIncome ? "th-tx-amount-income" : "th-tx-amount-expense"}`}>
-        {isIncome ? "+" : "−"}₹{tx.amount.toFixed(2)}
+      {/* Amount + actions */}
+      <div className="th-tx-right">
+        <div className={`th-tx-amount ${isIncome ? "th-tx-amount-income" : "th-tx-amount-expense"}`}>
+          {isIncome ? "+" : "−"}₹{tx.amount.toFixed(2)}
+        </div>
+        <div className="th-tx-actions">
+          <button
+            className="th-icon-btn"
+            onClick={() => onEdit(tx)}
+            disabled={busy}
+            aria-label="Edit transaction"
+            title="Edit"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            className="th-icon-btn th-icon-btn-danger"
+            onClick={() => onDelete(tx._id)}
+            disabled={busy}
+            aria-label="Delete transaction"
+            title="Delete"
+          >
+            {busy ? <Loader2 size={14} className="th-spin" /> : <Trash2 size={14} />}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -81,6 +133,16 @@ const TransactionRow = ({ tx, index }: { tx: Transaction; index: number }) => {
 export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: TransactionHistoryProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
+  const [isEditingTransaction, setIsEditingTransaction] = useState(false);
+  const [editFormVisible, setEditFormVisible] = useState(false);
+  const [editTransactionId, setEditTransactionId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState({
+    type: "expense" as "income" | "expense",
+    amount: 0,
+    category: "",
+    note: "",
+    date: "",
+  });
   const [newTransaction, setNewTransaction] = useState({
     type: "expense" as "income" | "expense",
     amount: 0,
@@ -90,20 +152,38 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [loading, setLoading] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const API_BASE = API_BASE_URL;
   const token = localStorage.getItem("token");
 
   const fetchTransactions = useCallback(async () => {
+    if (!token) {
+      setTransactions([]);
+      setError("Please log in to view transactions.");
+      return;
+    }
     try {
       setLoading(true);
+      setError("");
       const res = await fetch(`${API_BASE}/transactions`, {
+        cache: "no-store",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      setTransactions(data);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to fetch transactions");
+
+      const txs = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data?.transactions)
+          ? data.data.transactions
+          : [];
+
+      setTransactions(txs as Transaction[]);
     } catch (err) {
-      console.error("Error fetching transactions:", err);
+      setTransactions([]);
+      setError(err instanceof Error ? err.message : "Failed to fetch transactions");
     } finally {
       setLoading(false);
     }
@@ -112,18 +192,24 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
   const addTransaction = async () => {
     if (newTransaction.amount > 0 && newTransaction.category && newTransaction.note) {
       try {
+        if (!token) {
+          setError("Please log in to add transactions.");
+          return;
+        }
+        setError("");
         const res = await fetch(`${API_BASE}/transactions`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(newTransaction),
         });
-        if (!res.ok) throw new Error("Failed to add transaction");
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.message || "Failed to add transaction");
         await fetchTransactions();
         notifyFinanceDataUpdated();
         setNewTransaction({ type: "expense", amount: 0, category: "", note: "" });
         closeForm();
       } catch (err) {
-        console.error(err);
+        setError(err instanceof Error ? err.message : "Failed to add transaction");
       }
     }
   };
@@ -131,7 +217,106 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
   const openForm = () => { setIsAddingTransaction(true); setTimeout(() => setFormVisible(true), 10); };
   const closeForm = () => { setFormVisible(false); setTimeout(() => setIsAddingTransaction(false), 300); };
 
+  const openEdit = (tx: Transaction) => {
+    setError("");
+    setEditTransactionId(tx._id);
+    setEditDraft({
+      type: tx.type,
+      amount: tx.amount,
+      category: tx.category,
+      note: tx.note || "",
+      date: tx.date,
+    });
+    setIsEditingTransaction(true);
+    setTimeout(() => setEditFormVisible(true), 10);
+  };
+
+  const closeEdit = () => {
+    setEditFormVisible(false);
+    setTimeout(() => {
+      setIsEditingTransaction(false);
+      setEditTransactionId(null);
+    }, 300);
+  };
+
+  const saveEdit = async () => {
+    if (!token) {
+      setError("Please log in to edit transactions.");
+      return;
+    }
+    if (!editTransactionId) return;
+    if (!editDraft.category.trim() || !editDraft.note.trim() || editDraft.amount <= 0) {
+      setError("Please provide amount, category, and note.");
+      return;
+    }
+
+    try {
+      setError("");
+      setBusyId(editTransactionId);
+      const res = await fetch(`${API_BASE}/transactions/${editTransactionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          type: editDraft.type,
+          amount: editDraft.amount,
+          category: editDraft.category,
+          note: editDraft.note,
+          date: editDraft.date,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to update transaction");
+
+      const updated = (data?.data || data) as Transaction;
+      setTransactions((prev) =>
+        prev.map((t) => (t._id === editTransactionId ? (updated as Transaction) : t))
+      );
+      notifyFinanceDataUpdated();
+      closeEdit();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update transaction");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const deleteTx = async (id: string) => {
+    if (!token) {
+      setError("Please log in to delete transactions.");
+      return;
+    }
+
+    try {
+      setError("");
+      setBusyId(id);
+      const res = await fetch(`${API_BASE}/transactions/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to delete transaction");
+
+      setTransactions((prev) => prev.filter((t) => t._id !== id));
+      notifyFinanceDataUpdated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete transaction");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchTransactions();
+    };
+
+    window.addEventListener(FINANCE_DATA_UPDATED_EVENT, handleRefresh);
+    return () => {
+      window.removeEventListener(FINANCE_DATA_UPDATED_EVENT, handleRefresh);
+    };
+  }, [fetchTransactions]);
 
   const filtered = transactions.filter((t) => {
     const matchSearch =
@@ -465,6 +650,38 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
         .th-tx-amount-income  { color: #4ade80; }
         .th-tx-amount-expense { color: #f87171; }
 
+        .th-spin { animation: th-spin 0.8s linear infinite; }
+
+        .th-tx-right { display: flex; align-items: center; gap: 10px; }
+        .th-tx-actions { display: flex; align-items: center; gap: 6px; }
+        .th-icon-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 10px;
+          border: 1px solid rgba(148,163,184,0.18);
+          background: rgba(15,23,42,0.35);
+          color: rgba(226,232,240,0.9);
+          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+          flex-shrink: 0;
+        }
+        .th-icon-btn:hover {
+          transform: translateY(-1px);
+          background: rgba(15,23,42,0.55);
+          border-color: rgba(99,179,237,0.28);
+        }
+        .th-icon-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .th-icon-btn-danger:hover { border-color: rgba(239,68,68,0.35); }
+
+        .th-error {
+          margin-bottom: 12px;
+          padding: 10px 12px;
+          border-radius: 14px;
+          border: 1px solid rgba(239,68,68,0.22);
+          background: rgba(239,68,68,0.08);
+          color: rgba(254,202,202,0.95);
+          font-size: 0.78rem;
+        }
+
         /* ── Loading ── */
         .th-loading {
           display: flex; align-items: center; justify-content: center;
@@ -534,6 +751,7 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
 
         {/* ── Body ── */}
         <div className="th-body">
+          {error && <div className="th-error">{error}</div>}
           {/* Add form */}
           {isAddingTransaction && (
             <div className={`th-form-wrap ${formVisible ? "open" : "close"}`}>
@@ -587,6 +805,57 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
             </div>
           )}
 
+          {/* Edit form */}
+          {isEditingTransaction && (
+            <div className={`th-form-wrap ${editFormVisible ? "open" : "close"}`}>
+              <div className="th-form">
+                <div className="th-form-row">
+                  <Select
+                    value={editDraft.type}
+                    onValueChange={(v: "income" | "expense") => setEditDraft({ ...editDraft, type: v })}
+                  >
+                    <SelectTrigger className="th-field" style={{ height: "auto" }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="expense">Expense</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <input
+                    className="th-field"
+                    type="number"
+                    placeholder="Amount"
+                    value={editDraft.amount || ""}
+                    onChange={(e) =>
+                      setEditDraft({ ...editDraft, amount: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <input
+                  className="th-field"
+                  placeholder="Category (e.g. Food, Travel)"
+                  value={editDraft.category}
+                  onChange={(e) => setEditDraft({ ...editDraft, category: e.target.value })}
+                />
+                <input
+                  className="th-field"
+                  placeholder="Note"
+                  value={editDraft.note}
+                  onChange={(e) => setEditDraft({ ...editDraft, note: e.target.value })}
+                />
+                <div className="th-form-actions">
+                  <button className="th-btn-confirm" onClick={saveEdit} disabled={!editTransactionId || busyId === editTransactionId}>
+                    <Check size={13} /> Save
+                  </button>
+                  <button className="th-btn-cancel" onClick={closeEdit} disabled={busyId === editTransactionId}>
+                    <X size={13} /> Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Controls */}
           <div className="th-controls">
             <div className="th-search-wrap">
@@ -627,7 +896,14 @@ export const TransactionHistory = ({ searchTerm = "", setSearchTerm }: Transacti
           ) : (
             <div className="th-list">
               {filtered.map((tx, i) => (
-                <TransactionRow key={tx._id} tx={tx} index={i} />
+                <TransactionRow
+                  key={tx._id}
+                  tx={tx}
+                  index={i}
+                  busy={busyId === tx._id}
+                  onEdit={openEdit}
+                  onDelete={deleteTx}
+                />
               ))}
             </div>
           )}

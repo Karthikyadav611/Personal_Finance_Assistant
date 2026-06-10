@@ -3,8 +3,10 @@ const mongoose = require("mongoose");
 let cachedConnection = null;
 
 const connectDB = async () => {
-  if (!process.env.MONGODB_URI) {
-    throw new Error("MONGODB_URI is not defined in the environment");
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+  if (!mongoUri) {
+    throw new Error("MONGODB_URI (or MONGO_URI) is not defined in the environment");
   }
 
   if (cachedConnection) {
@@ -13,7 +15,7 @@ const connectDB = async () => {
 
   mongoose.set("strictQuery", true);
 
-  const connection = await mongoose.connect(process.env.MONGODB_URI);
+  const connection = await mongoose.connect(mongoUri);
   console.log(`MongoDB connected: ${connection.connection.host}`);
 
   cachedConnection = connection;

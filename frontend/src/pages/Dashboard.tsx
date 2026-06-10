@@ -7,7 +7,11 @@ import { PortfolioSummary } from "@/components/PortfolioSummary";
 import { ExpenseChart } from "@/components/ExpenseChart";
 import { TransactionRateChart } from "@/components/TransactionRateChart";
 import { CategoryBreakdownChart } from "@/components/CategoryBreakdownChart";
+import { ReportsPanel } from "@/components/ReportsPanel";
+import { StatementUploadPanel } from "@/components/StatementUploadPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { API_BASE_URL } from "@/config/api";
+import { getStoredUserName, storeUser } from "@/utils/authUser";
 
 /* ─────────────────────────────────────────────
    Floating orb component for background depth
@@ -71,6 +75,8 @@ const tabs = [
   { value: "budget",    label: "Budget",    icon: "◉" },
   { value: "transactions", label: "Transactions", icon: "◎" },
   { value: "assistant", label: "AI Assistant", icon: "◇" },
+  { value: "reports", label: "Reports", icon: "⬡" },
+  { value: "upload", label: "Upload", icon: "⬢" },
 ];
 
 /* ─────────────────────────────────────────────
@@ -161,12 +167,48 @@ const Dashboard = () => {
   const [mounted, setMounted]           = useState(false);
   const [prevTab, setPrevTab]           = useState("dashboard");
   const [tabAnimating, setTabAnimating] = useState(false);
+  const [userName, setUserName] = useState(() => getStoredUserName());
 
   useEffect(() => {
     // Mount animation
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (userName) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/user/profile`, {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await response.json().catch(() => null);
+        if (!response.ok) return;
+
+        const user = json?.data || json?.user;
+        const name = String(user?.name || "").trim();
+        if (!cancelled && name) {
+          storeUser(user);
+          setUserName(name);
+        }
+      } catch (_error) {
+        // Keep the generic greeting if the profile request is unavailable.
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userName]);
 
   const handleTabChange = (val: string) => {
     if (val === activeTab) return;
@@ -325,7 +367,7 @@ const Dashboard = () => {
                   letterSpacing: "-0.01em",
                 }}
               >
-                <span className="shimmer-text">Personal Finance Dashboard</span>
+                <span className="shimmer-text">Hello {userName || "there"} ! Welcome</span>
               </h1>
               <p
                 style={{
@@ -351,7 +393,7 @@ const Dashboard = () => {
           >
             {/* Tab list */}
             <TabsList
-              className="grid w-full grid-cols-4"
+              className="grid w-full grid-cols-6"
               style={{
                 background: "rgba(15,23,42,0.7)",
                 backdropFilter: "blur(16px)",
@@ -473,6 +515,30 @@ const Dashboard = () => {
                   </Reveal>
                 </div>
               </div>
+            </TabsContent>
+
+            {/* â”€â”€ REPORTS TAB â”€â”€ */}
+            <TabsContent
+              value="reports"
+              className={`mt-6 ${!tabAnimating && activeTab === "reports" ? "tab-content-enter" : ""}`}
+            >
+              <Reveal delay={0}>
+                <GlassCard>
+                  <ReportsPanel />
+                </GlassCard>
+              </Reveal>
+            </TabsContent>
+
+            {/* â”€â”€ UPLOAD TAB â”€â”€ */}
+            <TabsContent
+              value="upload"
+              className={`mt-6 ${!tabAnimating && activeTab === "upload" ? "tab-content-enter" : ""}`}
+            >
+              <Reveal delay={0}>
+                <GlassCard>
+                  <StatementUploadPanel />
+                </GlassCard>
+              </Reveal>
             </TabsContent>
           </Tabs>
         </div>

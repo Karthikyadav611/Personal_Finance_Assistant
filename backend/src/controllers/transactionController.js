@@ -121,8 +121,27 @@ const updateTransaction = asyncHandler(async (req, res) => {
     throw new Error("Request body must be a valid JSON object");
   }
 
-  const payload = normalizeTransactionPayload(req.body);
-  const errors = validateTransactionPayload(payload);
+  // Accept both "full" update payloads and partial updates (common in frontends).
+  // If some fields are omitted, we keep the existing values.
+  const existing = await Transaction.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!existing) {
+    res.status(404);
+    throw new Error("Transaction not found");
+  }
+
+  const body = req.body || {};
+  const payload = {
+    type: Object.prototype.hasOwnProperty.call(body, "type") ? body.type : existing.type,
+    amount: Object.prototype.hasOwnProperty.call(body, "amount") ? body.amount : existing.amount,
+    category: Object.prototype.hasOwnProperty.call(body, "category") ? body.category : existing.category,
+    date: Object.prototype.hasOwnProperty.call(body, "date") ? body.date : existing.date,
+    description: Object.prototype.hasOwnProperty.call(body, "description") || Object.prototype.hasOwnProperty.call(body, "note")
+      ? body.description ?? body.note ?? ""
+      : existing.description,
+  };
+
+  const normalized = normalizeTransactionPayload(payload);
+  const errors = validateTransactionPayload(normalized);
 
   if (errors.length > 0) {
     res.status(400);
@@ -131,11 +150,8 @@ const updateTransaction = asyncHandler(async (req, res) => {
 
   const transaction = await Transaction.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    payload,
-    {
-      new: true,
-      runValidators: true,
-    }
+    normalized,
+    { new: true, runValidators: true }
   );
 
   if (!transaction) {

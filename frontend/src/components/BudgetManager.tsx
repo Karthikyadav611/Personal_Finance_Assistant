@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlusCircle, Trash2, Target, TrendingUp, AlertTriangle, Check, X } from "lucide-react";
-import { notifyFinanceDataUpdated } from "@/utils/financeEvents";
+import { FINANCE_DATA_UPDATED_EVENT, notifyFinanceDataUpdated } from "@/utils/financeEvents";
 import { API_BASE_URL } from "@/config/api";
 
 interface Budget {
@@ -143,20 +143,39 @@ export const BudgetManager = () => {
 
   const token = localStorage.getItem("token");
 
+  const extractBudgetArray = (payload: any): BudgetApiItem[] => {
+    if (Array.isArray(payload)) return payload as BudgetApiItem[];
+    if (Array.isArray(payload?.data)) return payload.data as BudgetApiItem[];
+    return [];
+  };
+
   const fetchBudgets = useCallback(async () => {
     if (!token) { setBudgets([]); setError("Please log in to view budgets."); return; }
     try {
       setLoading(true); setError("");
-      const res = await fetch(`${API_BASE}/budget`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to fetch budgets");
-      setBudgets(Array.isArray(data) ? data.map(mapBudget) : []);
+      const res = await fetch(`${API_BASE}/budget`, { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to fetch budgets");
+
+      const items = extractBudgetArray(data);
+      setBudgets(items.map(mapBudget));
     } catch (err) {
       setBudgets([]); setError(err instanceof Error ? err.message : "Failed to fetch budgets");
     } finally { setLoading(false); }
   }, [token]);
 
   useEffect(() => { fetchBudgets(); }, [fetchBudgets]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchBudgets();
+    };
+
+    window.addEventListener(FINANCE_DATA_UPDATED_EVENT, handleRefresh);
+    return () => {
+      window.removeEventListener(FINANCE_DATA_UPDATED_EVENT, handleRefresh);
+    };
+  }, [fetchBudgets]);
 
   const openForm  = () => { setIsAdding(true);  setTimeout(() => setFormVisible(true), 10); };
   const closeForm = () => { setFormVisible(false); setTimeout(() => { setIsAdding(false); setError(""); }, 300); };

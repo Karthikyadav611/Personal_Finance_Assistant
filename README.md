@@ -1,281 +1,334 @@
-# 💰 Personal Finance Assistant (Full-Stack)
+# 💰 Personal Finance Assistant V2 (Multi-Agent AI)
 
-A full-stack Personal Finance Assistant web application built with a **React (Vite) frontend** and a **Node.js (Express) + MongoDB backend**.
+A production-style Personal Finance Assistant that helps users manage transactions and budgets, visualize spending, generate AI-powered monthly reports, forecast future expenses, upload bank statements, and interact with a conversational AI assistant capable of performing finance operations through natural language.
 
-It supports:
-- 🔐 Authentication (JWT)
-- 💸 Transaction & Budget Management
-- 📊 Finance Analytics & Summaries
-- 🤖 AI-powered Assistant (Natural Language Finance Operations)
-
----
-
-## 🚀 Live App
+## 🚀 Live Application
 
 Frontend: https://personal-finance-assistant-peach.vercel.app/
 
-> Update URLs if you deploy your own version.
+---
+
+## 🌟 Key Features
+
+### Authentication
+
+* JWT Authentication
+* Secure password hashing using bcrypt
+* Protected routes and user-specific data
+
+### Transaction Management
+
+* Create, update, delete transactions
+* Income and expense tracking
+* Category-based organization
+* Date filtering and analytics
+
+### Budget Management
+
+* Monthly category budgets
+* Real-time spending progress
+* Overspending alerts
+* Budget performance insights
+
+### Dashboard Analytics
+
+* Income vs Expense visualization
+* Spending category breakdown
+* Financial summaries
+* Interactive charts using Recharts
+
+### Multi-Agent AI Assistant
+
+* Conversational finance assistant
+* Natural language transaction creation
+* Budget management through chat
+* Financial insights and recommendations
+* Utility calculations and finance queries
+* Market-aware responses (optional)
+
+### AI Reports & Forecasting
+
+* Monthly financial reports
+* Spending trend analysis
+* Forecasted future expenses
+* Personalized savings suggestions
+* Budget utilization summaries
+
+### Statement Upload & Import
+
+* CSV upload support
+* XLSX upload support
+* PDF statement parsing
+* Transaction preview before import
+* Bulk transaction import
+
+---
+
+## 🏗️ System Architecture
+
+```text
+User
+ ↓
+React Frontend
+ ↓
+Express Backend
+ ↓
+AI Orchestrator
+ ↓
+Agents
+ ├── Transaction Agent
+ ├── Budget Agent
+ ├── Insight Agent
+ ├── Forecast Agent
+ ├── Report Agent
+ ├── Upload Agent
+ ├── Market Agent
+ └── Utility Agent
+ ↓
+MongoDB Database
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- React + TypeScript (Vite)
-- Tailwind CSS + shadcn/ui
-- TanStack Query
-- Recharts
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* ShadCN UI
+* Radix UI
+* Recharts
+* Framer Motion
 
 ### Backend
-- Node.js + Express
-- MongoDB Atlas + Mongoose
-- JWT Authentication
-- bcrypt Password Hashing
-- CORS + Error Handling
 
-### AI Integration
-- Groq API (LLM-based assistant)
-- Optional Market Data APIs (Alpha Vantage)
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* bcrypt
+* CORS
+* Centralized Error Handling
+
+### AI
+
+* Groq API
+* OpenAI Compatible APIs
+* Multi-Agent Routing Architecture
+
+### Market Data
+
+* Alpha Vantage API
 
 ---
 
-## 📁 Project Structure
+## 📁 Repository Structure
 
-```
+```text
 finance-assistant/
 │
-├── backend/        # Express API (MongoDB, JWT, AI assistant)
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── vite.config.ts
 │
-├── frontend/       # React (Vite) frontend UI
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   │   ├── ai/
+│   │   │   │   ├── agents/
+│   │   │   │   ├── orchestrator.js
+│   │   │   │   └── router.js
+│   │   │   └── finance/
+│   │   └── utils/
+│   │
+│   ├── app.js
+│   ├── server.js
+│   └── api/index.js
+│
+└── README.md
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Local Development Setup
 
-- Node.js (18+ recommended)
-- npm
-- MongoDB Atlas (or any MongoDB instance)
+### Prerequisites
+
+* Node.js 18+
+* MongoDB Atlas
+* npm
 
 ---
 
-## 🧑‍💻 Quick Start (Local Development)
-
-### 1️⃣ Backend Setup
+### Backend Setup
 
 ```bash
 cd backend
 npm install
 ```
 
-Create `.env` file inside `backend/`:
+Create `.env`
 
 ```env
-# Server
 NODE_ENV=development
 PORT=5000
 
-# Database
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>/<db>?retryWrites=true&w=majority
+MONGODB_URI=your_mongodb_connection_string
 
-# Auth
-JWT_SECRET=your_secret_key
+JWT_SECRET=your_jwt_secret
 JWT_EXPIRES_IN=7d
 
-# CORS
-FRONTEND_URL=http://localhost:5173,https://your-frontend.vercel.app
+FRONTEND_URL=http://localhost:8080
 
-# AI (Optional)
 GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
 
-# Market Data (Optional)
-ALPHA_VANTAGE_API_KEY=your_key
-ALPHA_VANTAGE_ENTITLEMENT=free
+ALPHA_VANTAGE_API_KEY=your_api_key
 ```
 
-Run backend:
+Start backend:
 
 ```bash
 npm run dev
 ```
 
-Backend runs on:
-```
-http://localhost:5000
-```
-
 ---
 
-### 2️⃣ Frontend Setup
+### Frontend Setup
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-Create `.env` file inside `frontend/`:
+Create `.env`
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-Run frontend:
+Start frontend:
 
 ```bash
 npm run dev
 ```
 
-Frontend runs on:
-```
-http://localhost:5173
-```
-
 ---
 
-## 🔑 Environment Variables
+## 🔌 API Endpoints
 
-### Backend (`backend/.env`)
+### Authentication
 
-**Required:**
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `FRONTEND_URL`
-
-**Optional:**
-- `PORT`
-- `JWT_EXPIRES_IN`
-- `GROQ_API_KEY`
-- `ALPHA_VANTAGE_API_KEY`
-
----
-
-### Frontend (`frontend/.env`)
-
-- `VITE_API_BASE_URL` → Backend URL
-
-⚠️ Notes:
-- Do NOT add trailing `/`
-- Rebuild required after env changes
-
----
-
-## 🔌 API Overview
-
-### 🔐 Authentication
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-
----
-
-### 👤 User
-- `GET /api/user/profile` (Protected)
-
----
-
-### 💸 Transactions
-- `GET /api/transactions`
-- `POST /api/transactions`
-- `PUT /api/transactions/:id`
-- `DELETE /api/transactions/:id`
-
-Filters:
-- `type=income|expense`
-- `startDate`
-- `endDate`
-
----
-
-### 📊 Budgets
-- `GET /api/budget`
-- `POST /api/budget`
-- `PUT /api/budget/:id`
-- `DELETE /api/budget/:id`
-
----
-
-### 🤖 AI Assistant
-- `POST /api/chatbot`
-
-Capabilities:
-- Natural language transaction handling
-- Budget management
-- Financial summaries
-- Market insights
-
----
-
-## 📦 Example API Requests
-
-### Register
-
-```json
+```http
 POST /api/auth/register
-{
-  "name": "Alex",
-  "email": "alex@example.com",
-  "password": "StrongPass123"
-}
-```
-
----
-
-### Login
-
-```json
 POST /api/auth/login
-{
-  "email": "alex@example.com",
-  "password": "StrongPass123"
-}
+```
+
+### User
+
+```http
+GET /api/user/profile
+```
+
+### Transactions
+
+```http
+GET    /api/transactions
+POST   /api/transactions
+PUT    /api/transactions/:id
+DELETE /api/transactions/:id
+```
+
+### Budgets
+
+```http
+GET    /api/budget
+POST   /api/budget
+PUT    /api/budget/:id
+DELETE /api/budget/:id
+```
+
+### AI Assistant
+
+```http
+POST /api/chatbot
+POST /api/ai/chat
+```
+
+### Reports
+
+```http
+POST /api/reports/generate
+GET  /api/reports/:month/:year
+```
+
+### Uploads
+
+```http
+POST /api/uploads/statement
+POST /api/uploads/import-confirmed
+```
+
+### Forecasting
+
+```http
+GET /api/analytics/forecast
 ```
 
 ---
 
-### Authenticated Request
-
-```
-GET /api/transactions
-Authorization: Bearer <JWT_TOKEN>
-```
-
----
-
-## 🚀 Deployment (Vercel)
+## 🚀 Deployment
 
 ### Backend Deployment
 
-1. Create Vercel Project
-2. Set Root Directory → `backend`
-3. Add Environment Variables:
-   - `MONGODB_URI`
-   - `JWT_SECRET`
-   - `FRONTEND_URL`
-
-Backend URL:
-```
-https://your-backend.vercel.app
-```
-
----
+* Create Vercel Project
+* Set Root Directory to `backend`
+* Configure environment variables
+* Deploy
 
 ### Frontend Deployment
 
-1. Create Vercel Project
-2. Set Root Directory → `frontend`
-3. Add:
-   ```env
-   VITE_API_BASE_URL=https://your-backend.vercel.app
-   ```
+* Create another Vercel Project
+* Set Root Directory to `frontend`
+* Set:
+
+```env
+VITE_API_BASE_URL=https://your-backend-url.vercel.app
+```
+
+* Deploy
 
 ---
 
-## 🔒 Security Notes
+## 📸 Screenshots
 
-- ❌ Never commit `.env`
-- 🔐 Use strong `JWT_SECRET`
-- 🔑 Store API keys securely
-- 🌐 Configure MongoDB IP whitelist
+Recommended screenshots:
+
+* Dashboard Overview
+* AI Chat Assistant
+* Budget Tracking
+* Expense Analytics
+* Monthly Reports
+* Statement Upload Flow
+
+---
+
+## 🔒 Security
+
+* Never commit `.env`
+* Use strong JWT secrets
+* Secure MongoDB access
+* Validate all API inputs
+* Configure CORS properly
 
 ---
 
@@ -284,29 +337,42 @@ https://your-backend.vercel.app
 ### Backend
 
 ```bash
-npm run dev    # Development (nodemon)
-npm start      # Production
+npm run dev
+npm start
 ```
 
 ### Frontend
 
 ```bash
-npm run dev      # Dev server
-npm run build    # Production build
-npm run preview  # Preview build
+npm run dev
+npm run build
+npm run preview
 ```
 
 ---
 
-## 📄 License
+## 🔮 Future Enhancements
 
-MIT License (Update if needed)
+* OCR Receipt Scanning
+* Category Auto Classification
+* Advanced Forecasting Models
+* Export Reports as PDF
+* Email Financial Reports
+* Multi-Currency Support
+* Investment Tracking
 
 ---
 
 ## 👨‍💻 Author
 
-**Karthik Yadav**
+**Karthik Yadav M**
 
-- Full Stack Developer
-- AI & Deep Learning Enthusiast
+* Full Stack Developer
+* AI & Machine Learning Enthusiast
+* React • Node.js • MongoDB • Generative AI
+
+---
+
+### Resume Project Description
+
+Built a production-style Personal Finance Assistant with a multi-agent AI architecture that enables users to manage transactions and budgets through natural language, generate AI-powered financial reports, forecast future spending, and import statements from CSV/XLSX/PDF files. Developed using React, Node.js, Express, MongoDB, JWT authentication, and AI integrations with Groq.

@@ -7,10 +7,18 @@ const userRoutes = require("./routes/userRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { normalizeOrigin } = require("./utils/validators");
 
 const app = express();
+
+// This API serves user-specific, frequently-changing data (transactions/budgets).
+// Disable ETags and explicit caching to avoid stale UI data in some deployments.
+app.disable("etag");
 
 const allowedOrigins = (process.env.FRONTEND_URL || "")
   .split(",")
@@ -38,6 +46,19 @@ app.use(
   })
 );
 
+app.use((_req, res, next) => {
+  // Prevent browsers/CDNs from caching authenticated API responses.
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  // Some CDNs (including Vercel) may respect CDN-specific cache headers.
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  // Make cache behavior explicit for auth'd APIs.
+  res.setHeader("Vary", "Authorization");
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -61,6 +82,10 @@ app.use("/api/user", userRoutes);
 app.use("/api/transactions", transactionRoutes.apiRouter);
 app.use("/api/budget", budgetRoutes.apiRouter);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/uploads", uploadRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Compatibility routes for the current frontend.
 app.use("/auth", authRoutes);

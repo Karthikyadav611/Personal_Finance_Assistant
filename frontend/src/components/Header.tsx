@@ -37,6 +37,7 @@ export const Header = ({ searchTerm, setSearchTerm, onTabChange }: HeaderProps) 
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsAccountsOpen(false);
     navigate("/login");
   };
@@ -68,7 +69,7 @@ export const Header = ({ searchTerm, setSearchTerm, onTabChange }: HeaderProps) 
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-600 text-black hover:bg-slate-700"
+              className="border-slate-600 text-slate-100 hover:bg-slate-800"
               onClick={() => setIsAccountsOpen(true)}
             >
               <Wallet className="h-4 w-4 mr-2" />
@@ -90,14 +91,20 @@ export const Header = ({ searchTerm, setSearchTerm, onTabChange }: HeaderProps) 
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => openTabFromAccounts("dashboard")}>
               Open Overview
             </Button>
-            <Button variant="outline" className="border-slate-600 text-black hover:bg-slate-800" onClick={() => openTabFromAccounts("budget")}>
+            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800" onClick={() => openTabFromAccounts("budget")}>
               Manage Budgets
             </Button>
-            <Button variant="outline" className="border-slate-600 text-black hover:bg-slate-800" onClick={() => openTabFromAccounts("transactions")}>
+            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800" onClick={() => openTabFromAccounts("transactions")}>
               Review Transactions
             </Button>
-            <Button variant="outline" className="border-slate-600 text-black hover:bg-slate-800" onClick={() => openTabFromAccounts("assistant")}>
+            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800" onClick={() => openTabFromAccounts("assistant")}>
               Open Assistant
+            </Button>
+            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800" onClick={() => openTabFromAccounts("reports")}>
+              View Reports
+            </Button>
+            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800" onClick={() => openTabFromAccounts("upload")}>
+              Upload Statement
             </Button>
             <Button variant="destructive" onClick={handleLogout}>
               Log Out
